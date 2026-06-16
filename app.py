@@ -3,6 +3,14 @@ import pypdf
 import io
 from pypdf import PageObject, Transformation
 
+# Tentativa de importar reportlab para desenho seguro de marcas, se não houver, instalamos dinamicamente
+try:
+    from reportlab.pdfgen import canvas
+except ImportError:
+    import os
+    os.system("pip install reportlab")
+    from reportlab.pdfgen import canvas
+
 # Configuração da página da plataforma
 st.set_page_config(page_title="Imposição Profissional 32x45", page_icon="📖", layout="wide")
 
@@ -13,66 +21,59 @@ st.write("Gere esquemas de imposição reais para gráfica em formato **SRA3 (32
 LARGURA_SRA3 = int(450 * 2.83465) # 1275 pt
 ALTURA_SRA3 = int(320 * 2.83465)  # 907 pt
 
-def desenhar_marcas_no_canvas(largura_folha, altura_folha, marcas_corte=True, marcas_dobra=True, dobra_cruzada=False):
-    """Gera uma página transparente contendo as regras vetoriais de corte e dobra na sangria"""
-    overlay = PageObject.create_blank_page(width=largura_folha, height=altura_folha)
-    comandos = []
+def gerar_marcas_reportlab(largura_folha, altura_folha, marcas_corte=True, marcas_dobra=True, dobra_cruzada=False):
+    """Gere um PageObject contendo as marcas de corte e dobra usando ReportLab de forma segura"""
+    packet = io.BytesIO()
+    can = canvas.Canvas(packet, pagesize=(largura_folha, altura_folha))
     
-    # Linha fina (0.5 pt) em preto puro de registo
-    comandos.append("0.5 w")
-    comandos.append("0 0 0 RG")
+    # Configuração do traço: Preto de registo, linha fina de 0.5pt
+    can.setStrokeColorRGB(0, 0, 0)
+    can.setLineWidth(0.5)
     
     cx = largura_folha / 2
     cy = altura_folha / 2
-    comprimento_marca = 25 # tamanho das guias (aprox. 9mm)
+    comprimento_marca = 25 # aprox. 9mm
+    distancia_canto = 35    # Recuo para guilhotina
     
-    # 1. MARCAS DE DOBRA (Apenas nas pontas exteriores, em tracejado)
+    # 1. MARCAS DE DOBRA (Tracejadas, nas extremidades periféricas)
     if marcas_dobra:
-        comandos.append("[3 3] 0 d") # Ativa o tracejado para vincos
+        can.setDash(3, 3) # Ativa o tracejado
         
-        # Dobra Vertical Central (comum a A4 e A5)
-        comandos.append(f"{cx} {altura_folha} m {cx} {altura_folha - comprimento_marca} l")
-        comandos.append(f"{cx} 0 m {cx} {comprimento_marca} l")
+        # Dobra Vertical Central
+        can.line(cx, altura_folha, cx, altura_folha - comprimento_marca)
+        can.line(cx, 0, cx, comprimento_marca)
         
         if dobra_cruzada:
-            # Dobra Horizontal Central (exclusiva do caderno de 8 pág. A5)
-            comandos.append(f"0 {cy} m {comprimento_marca} {cy} l")
-            comandos.append(f"{largura_folha} {cy} m {largura_folha - comprimento_marca} {cy} l")
-        comandos.append("S")
-        
-    # 2. MARCAS DE CORTE / REFILE (Linhas nos quatro cantos externos)
+            # Dobra Horizontal Central
+            can.line(0, cy, comprimento_marca, cy)
+            can.line(largura_folha, cy, largura_folha - comprimento_marca, cy)
+            
+    # 2. MARCAS DE CORTE / REFILE (Linhas contínuas nos cantos externos)
     if marcas_corte:
-        comandos.append("[] 0 d") # Desativa o tracejado (linha contínua)
-        distancia_canto = 35       # Alinhamento do limite físico da guilhotina
+        can.setDash() # Desativa o tracejado (linha contínua)
         
         # Canto Superior Esquerdo
-        comandos.append(f"{distancia_canto} {altura_folha} m {distancia_canto} {altura_folha - comprimento_marca} l")
-        comandos.append(f"0 {altura_folha - distancia_canto} m {comprimento_marca} {altura_folha - distancia_canto} l")
+        can.line(distancia_canto, altura_folha, distancia_canto, altura_folha - comprimento_marca)
+        can.line(0, altura_folha - distancia_canto, comprimento_marca, altura_folha - distancia_canto)
         
         # Canto Superior Direito
-        comandos.append(f"{largura_folha - distancia_canto} {altura_folha} m {largura_folha - distancia_canto} {altura_folha - comprimento_marca} l")
-        comandos.append(f"{largura_folha} {altura_folha - distancia_canto} m {largura_folha - comprimento_marca} {distancia_canto} l")
+        can.line(largura_folha - distancia_canto, altura_folha, largura_folha - distancia_canto, altura_folha - comprimento_marca)
+        can.line(largura_folha, altura_folha - distancia_canto, largura_folha - comprimento_marca, altura_folha - distancia_canto)
         
         # Canto Inferior Esquerdo
-        comandos.append(f"{distancia_canto} 0 m {distancia_canto} {comprimento_marca} l")
-        comandos.append(f"0 {distancia_canto} m {comprimento_marca} {distancia_canto} l")
+        can.line(distancia_canto, 0, distancia_canto, comprimento_marca)
+        can.line(0, distancia_canto, comprimento_marca, distancia_canto)
         
         # Canto Inferior Direito
-        comandos.append(f"{largura_folha - distancia_canto} 0 m {largura_folha - distancia_canto} {comprimento_marca} l")
-        comandos.append(f"{largura_folha} {distancia_canto} m {largura_folha - comprimento_marca} {distancia_canto} l")
+        can.line(largura_folha - distancia_canto, 0, largura_folha - distancia_canto, comprimento_marca)
+        can.line(largura_folha, distancia_canto, largura_folha - comprimento_marca, distancia_canto)
         
-        comandos.append("S")
-        
-    if comandos:
-        conteudo_grafico = "\n".join(comandos).encode('utf-8')
-        # Injeção compatível e forçada através de stream limpo no PDF
-        try:
-            from pypdf import ContentStream
-            overlay._contents = ContentStream(conteudo_grafico, overlay.pdf)
-        except:
-            overlay.set_contents(pypdf.generic.DecodedStreamObject(conteudo_grafico))
-            
-    return overlay
+    can.save()
+    packet.seek(0)
+    
+    # Carrega o canvas gerado para um PageObject do pypdf
+    marcas_reader = pypdf.PdfReader(packet)
+    return marcas_reader.pages[0]
 
 def colar_na_folha_industrial(folha_destino, pag_orig, q_larg, alt_quad, ox, oy, rodar_90=False, inverter_cabeca=False):
     """Executa a rotação complexa de encaixe mantendo a consistência dos eixos da folha"""
@@ -104,13 +105,13 @@ def colar_na_folha_industrial(folha_destino, pag_orig, q_larg, alt_quad, ox, oy,
             transf = transf.rotate(90).translate(ox + mx + w_f, oy + my)
     else:
         if inverter_cabeca:
-            # Inversão total de 180° (para esquemas especiais)
+            # Inversão total de 180°
             transf = transf.rotate(180).translate(ox + mx + w_f, oy + my + h_f)
         else:
             # Posição Padrão Vertical
             transf = transf.translate(ox + mx, oy + my)
             
-    # Criação da película intermediária para garantir que o merge não corrompe os quadrantes vizinhos
+    # Criação da película intermediária para isolar as transformações
     pag_temp = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
     pag_temp.merge_page(pag_orig)
     pag_temp.add_transformation(transf)
@@ -167,7 +168,7 @@ if uploaded_file is not None:
             esquerda = 0
             direita = total_orig - 1
             
-            marcas = desenhar_marcas_no_canvas(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=False)
+            marcas = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=False)
             
             while esquerda < direita:
                 # FRENTE
@@ -183,7 +184,7 @@ if uploaded_file is not None:
                 # VERSO
                 folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                 colar_na_folha_industrial(folha_verso, paginas[esquerda], larg_quad, alt_quad, 0, 0, rodar_90=False, inverter_cabeca=False)
-                colar_na_folha_industrial(folha_verso, paginas[direita], larg_quad, alt_quad, larg_quad, 0, rodar_180=False, inverter_cabeca=False)
+                colar_na_folha_industrial(folha_verso, paginas[direita], larg_quad, alt_quad, larg_quad, 0, rodar_90=False, inverter_cabeca=False)
                 folha_verso.merge_page(marcas)
                 writer.add_page(folha_verso)
                 
@@ -195,7 +196,7 @@ if uploaded_file is not None:
             larg_quad = LARGURA_SRA3 / 2
             alt_quad = ALTURA_SRA3 / 2
             
-            marcas_f = desenhar_marcas_no_canvas(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=True)
+            marcas_f = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=True)
             
             for bloco in range(0, total_orig, 8):
                 b_pags = paginas[bloco:bloco+8]
@@ -228,10 +229,11 @@ if uploaded_file is not None:
         writer.write(output_pdf)
         output_pdf.seek(0)
         
-        st.success("🎉 Imposição corrigida e marcas reconstruídas com sucesso!")
+        st.success("🎉 Imposição industrial SRA3 executada perfeitamente com ReportLab!")
         st.download_button(
             label="Descarregar Ficheiro Imposição SRA3 📥",
             data=output_pdf,
             file_name="imposicao_industrial_perfeita.pdf",
             mime="application/pdf"
+        )
         )
