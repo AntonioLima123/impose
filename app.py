@@ -32,7 +32,7 @@ def gerar_marcas_reportlab(largura_folha, altura_folha, marcas_corte=True, marca
     if marcas_dobra:
         can.setDash(3, 3) # Ativa o tracejado
         
-        # Dobra Vertical Central
+        # Dobra Vertical Central (comum)
         can.line(cx, altura_folha, cx, altura_folha - comprimento_marca)
         can.line(cx, 0, cx, comprimento_marca)
         
@@ -64,16 +64,15 @@ def gerar_marcas_reportlab(largura_folha, altura_folha, marcas_corte=True, marca
     can.save()
     packet.seek(0)
     
-    # Carrega o canvas gerado para um PageObject do pypdf
     marcas_reader = pypdf.PdfReader(packet)
     return marcas_reader.pages[0]
 
 def colar_na_folha_industrial(folha_destino, pag_orig, q_larg, alt_quad, ox, oy, rodar_90=False, inverter_cabeca=False):
-    """Executa a rotação complexa de encaixe mantendo a consistência dos eixos da folha"""
+    """Executa a rotação e posicionamento milimétrico de cada página no seu respetivo quadrante"""
     larg_orig = float(pag_orig.mediabox.width)
     alt_orig = float(pag_orig.mediabox.height)
     
-    # 1. Determinar Escala Proporcional correta
+    # Se rodar 90 graus, a largura e altura originais invertem-se no espaço do quadrante
     if rodar_90:
         escala = min(q_larg / alt_orig, alt_quad / larg_orig) * 0.92
         w_f = alt_orig * escala
@@ -86,25 +85,21 @@ def colar_na_folha_industrial(folha_destino, pag_orig, q_larg, alt_quad, ox, oy,
     mx = (q_larg - w_f) / 2
     my = (alt_quad - h_f) / 2
     
-    # 2. Construir Matriz de Transformação Isolada
     transf = Transformation().scale(escala)
     
     if rodar_90:
         if inverter_cabeca:
-            # Roda -90° (Cabeça orientada para a linha de dobra central horizontal)
-            transf = transf.rotate(-90).translate(ox + mx, oy + my + h_f)
+            # Rotação de 270° (-90°) para as páginas superiores ficarem de cabeça para baixo e para o CENTRO
+            transf = transf.rotate(270).translate(ox + mx, oy + my + h_f)
         else:
-            # Roda +90° (Cabeça orientada para a linha de dobra central horizontal)
+            # Rotação de 90° para as páginas inferiores ficarem deitadas e com a cabeça para o CENTRO
             transf = transf.rotate(90).translate(ox + mx + w_f, oy + my)
     else:
         if inverter_cabeca:
-            # Inversão total de 180°
             transf = transf.rotate(180).translate(ox + mx + w_f, oy + my + h_f)
         else:
-            # Posição Padrão Vertical
             transf = transf.translate(ox + mx, oy + my)
             
-    # Criação da película intermediária para isolar as transformações
     pag_temp = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
     pag_temp.merge_page(pag_orig)
     pag_temp.add_transformation(transf)
@@ -129,33 +124,33 @@ if uploaded_file is not None:
     
     st.info(f"Ficheiro lido! Total de páginas identificadas: **{total_orig}**")
     
-    # Definir o divisor do caderno
+    # Ajuste automático do caderno
     multiplo = 4 if "A4" in modo else 8
     resto = total_orig % multiplo
     if resto != 0:
         pag_em_falta = multiplo - resto
-        st.warning(f"⚠️ Ajuste de Caderno: Foram geradas {pag_em_falta} páginas em branco para respeitar a imposição de {multiplo} págs.")
+        st.warning(f"⚠️ Ajuste de Caderno: Foram geradas {pag_em_falta} páginas em branco para respeitar o caderno técnico.")
         larg_p = paginas[0].mediabox.width
         alt_p = paginas[0].mediabox.height
         for _ in range(pag_em_falta):
             paginas.append(PageObject.create_blank_page(width=larg_p, height=alt_p))
         total_orig = len(paginas)
 
-    # Preview Gráfico Dinâmico no Painel
+    # Preview Informativo
     st.subheader("🗺️ Mapa Planeado para a Dobra Física (Folha 1)")
     c1, c2 = st.columns(2)
     if multiplo == 4:
-        with c1: st.info("**FRENTE (Face A)**\n\n Lado Esq: Pág Ultima  |  Lado Dir: Pág 1")
+        with c1: st.info("**FRENTE (Face A)**\n\n Lado Esq: Pág Última  |  Lado Dir: Pág 1")
         with c2: st.info("**VERSO (Face B)**\n\n Lado Esq: Pág 2  |  Lado Dir: Pág Penúltima")
     else:
-        with c1: st.info("**FRENTE (Face A) - Dobra Cruzada**\n\n[ Pág 5 ⬇️ (Invertida)]  [ Pág 4 ⬇️ (Invertida)]\n\n[ Pág 8 ⬆️ (Normal)]  [ Pág 1 ⬆️ (Normal)]")
-        with c2: st.info("**VERSO (Face B) - Dobra Cruzada**\n\n[ Pág 3 ⬇️ (Invertida)]  [ Pág 6 ⬇️ (Invertida)]\n\n[ Pág 2 ⬆️ (Normal)]  [ Pág 7 ⬆️ (Normal)]")
+        with c1: st.info("**FRENTE (Face A) - Dobra Cruzada**\n\n[ Pág 5 ⬇️ (Deitada/Invertada)]  [ Pág 4 ⬇️ (Deitada/Invertida)]\n\n[ Pág 8 ⬆️ (Deitada/Normal)]  [ Pág 1 ⬆️ (Deitada/Normal)]")
+        with c2: st.info("**VERSO (Face B) - Dobra Cruzada**\n\n[ Pág 3 ⬇️ (Deitada/Invertida)]  [ Pág 6 ⬇️ (Deitada/Invertida)]\n\n[ Pág 2 ⬆️ (Deitada/Normal)]  [ Pág 7 ⬆️ (Deitada/Normal)]")
 
     if st.button("Gerar Imposição Final SRA3 🚀"):
         writer = pypdf.PdfWriter()
         
         if multiplo == 4:
-            # MODO A4: Duas páginas verticais dispostas lado a lado na folha 32x45
+            # MODO A4: Duas páginas verticais lado a lado na folha 32x45 (Dobra vertical ao meio)
             larg_quad = LARGURA_SRA3 / 2
             alt_quad = ALTURA_SRA3
             esquerda = 0
@@ -185,7 +180,7 @@ if uploaded_file is not None:
                 direita -= 1
                 
         else:
-            # MODO A5: Quatro páginas deitadas (Grelha 2x2) com Dobra Cruzada Cabeça-com-Cabeça
+            # MODO A5: Quatro páginas deitadas (Grelha 2x2) - Primeira dobra horizontal ao meio
             larg_quad = LARGURA_SRA3 / 2
             alt_quad = ALTURA_SRA3 / 2
             
@@ -196,8 +191,10 @@ if uploaded_file is not None:
                 
                 # --- FRENTE (Face A) ---
                 folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
+                # Quadrantes Superiores (P5 e P4) -> Forçadas a deitar e invertidas (Cabeça para baixo, orientadas para o centro)
                 colar_na_folha_industrial(folha_frente, b_pags[4], larg_quad, alt_quad, 0, alt_quad, rodar_90=True, inverter_cabeca=True)
                 colar_na_folha_industrial(folha_frente, b_pags[3], larg_quad, alt_quad, larg_quad, alt_quad, rodar_90=True, inverter_cabeca=True)
+                # Quadrantes Inferiores (P8 e P1) -> Forçadas a deitar (Cabeça para cima, orientadas para o centro)
                 colar_na_folha_industrial(folha_frente, b_pags[7], larg_quad, alt_quad, 0, 0, rodar_90=True, inverter_cabeca=False)
                 colar_na_folha_industrial(folha_frente, b_pags[0], larg_quad, alt_quad, larg_quad, 0, rodar_90=True, inverter_cabeca=False)
                 
@@ -206,8 +203,10 @@ if uploaded_file is not None:
                 
                 # --- VERSO (Face B) ---
                 folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
+                # Quadrantes Superiores (P3 e P6) -> Forçadas a deitar e invertidas
                 colar_na_folha_industrial(folha_verso, b_pags[2], larg_quad, alt_quad, 0, alt_quad, rodar_90=True, inverter_cabeca=True)
                 colar_na_folha_industrial(folha_verso, b_pags[5], larg_quad, alt_quad, larg_quad, alt_quad, rodar_90=True, inverter_cabeca=True)
+                # Quadrantes Inferiores (P2 e P7) -> Forçadas a deitar
                 colar_na_folha_industrial(folha_verso, b_pags[1], larg_quad, alt_quad, 0, 0, rodar_90=True, inverter_cabeca=False)
                 colar_na_folha_industrial(folha_verso, b_pags[6], larg_quad, alt_quad, larg_quad, 0, rodar_90=True, inverter_cabeca=False)
                 
@@ -218,7 +217,7 @@ if uploaded_file is not None:
         writer.write(output_pdf)
         output_pdf.seek(0)
         
-        st.success("🎉 Imposição industrial SRA3 executada perfeitamente!")
+        st.success("🎉 Imposição corrigida! Rotações e dobras sincronizadas com sucesso.")
         st.download_button(
             label="Descarregar Ficheiro Imposição SRA3 📥",
             data=output_pdf,
