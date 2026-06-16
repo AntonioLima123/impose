@@ -2,14 +2,7 @@ import streamlit as st
 import pypdf
 import io
 from pypdf import PageObject, Transformation
-
-# Tentativa de importar reportlab para desenho seguro de marcas, se não houver, instalamos dinamicamente
-try:
-    from reportlab.pdfgen import canvas
-except ImportError:
-    import os
-    os.system("pip install reportlab")
-    from reportlab.pdfgen import canvas
+from reportlab.pdfgen import canvas
 
 # Configuração da página da plataforma
 st.set_page_config(page_title="Imposição Profissional 32x45", page_icon="📖", layout="wide")
@@ -203,10 +196,8 @@ if uploaded_file is not None:
                 
                 # --- FRENTE (Face A) ---
                 folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-                # Quadrantes Superiores (P5 e P4) -> Rodadas -90° (Cabeça orientada para o CENTRO da folha)
                 colar_na_folha_industrial(folha_frente, b_pags[4], larg_quad, alt_quad, 0, alt_quad, rodar_90=True, inverter_cabeca=True)
                 colar_na_folha_industrial(folha_frente, b_pags[3], larg_quad, alt_quad, larg_quad, alt_quad, rodar_90=True, inverter_cabeca=True)
-                # Quadrantes Inferiores (P8 e P1) -> Rodadas +90° (Cabeça orientada para o CENTRO da folha)
                 colar_na_folha_industrial(folha_frente, b_pags[7], larg_quad, alt_quad, 0, 0, rodar_90=True, inverter_cabeca=False)
                 colar_na_folha_industrial(folha_frente, b_pags[0], larg_quad, alt_quad, larg_quad, 0, rodar_90=True, inverter_cabeca=False)
                 
@@ -215,10 +206,8 @@ if uploaded_file is not None:
                 
                 # --- VERSO (Face B) ---
                 folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-                # Quadrantes Superiores (P3 e P6) -> Rodadas -90° (Cabeça orientada para o CENTRO da folha)
                 colar_na_folha_industrial(folha_verso, b_pags[2], larg_quad, alt_quad, 0, alt_quad, rodar_90=True, inverter_cabeca=True)
                 colar_na_folha_industrial(folha_verso, b_pags[5], larg_quad, alt_quad, larg_quad, alt_quad, rodar_90=True, inverter_cabeca=True)
-                # Quadrantes Inferiores (P2 e P7) -> Rodadas +90° (Cabeça orientada para o CENTRO da folha)
                 colar_na_folha_industrial(folha_verso, b_pags[1], larg_quad, alt_quad, 0, 0, rodar_90=True, inverter_cabeca=False)
                 colar_na_folha_industrial(folha_verso, b_pags[6], larg_quad, alt_quad, larg_quad, 0, rodar_90=True, inverter_cabeca=False)
                 
@@ -229,7 +218,7 @@ if uploaded_file is not None:
         writer.write(output_pdf)
         output_pdf.seek(0)
         
-        st.success("🎉 Imposição industrial SRA3 executada perfeitamente com ReportLab!")
+        st.success("🎉 Imposição industrial SRA3 executada perfeitamente!")
         st.download_button(
             label="Descarregar Ficheiro Imposição SRA3 📥",
             data=output_pdf,
