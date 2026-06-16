@@ -158,7 +158,7 @@ if uploaded_file is not None:
                 writer.add_page(folha_verso)
                 
                 esquerda += 1
-                whitespace_remover = direita -= 1
+                direita -= 1
                 
         else:
             # MODO A5: Grelha 2x2 Cabeça-com-Cabeça orientado para a Dobra Central Horizontal
@@ -187,21 +187,4 @@ if uploaded_file is not None:
                 # Quadrantes Superiores: P3 (Esq) e P6 (Dir) -> Rotação 270° (Cabeça para baixo)
                 colar_na_folha_industrial(folha_verso, b_pags[2], larg_quad, alt_quad, 0, alt_quad, rodar_90=True, inverter_cabeca=True)
                 colar_na_folha_industrial(folha_verso, b_pags[5], larg_quad, alt_quad, larg_quad, alt_quad, rodar_90=True, inverter_cabeca=True)
-                # Quadrantes Inferiores: P2 (Esq) e P7 (Dir) -> Rotação 90° (Cabeça para cima)
-                colar_na_folha_industrial(folha_verso, b_pags[1], larg_quad, alt_quad, 0, 0, rodar_90=True, inverter_cabeca=False)
-                colar_na_folha_industrial(folha_verso, b_pags[6], larg_quad, alt_quad, larg_quad, 0, rodar_90=True, inverter_cabeca=False)
-                
-                folha_verso.merge_page(marcas_f)
-                writer.add_page(folha_verso)
-                
-        output_pdf = io.BytesIO()
-        writer.write(output_pdf)
-        output_pdf.seek(0)
-        
-        st.success("🎉 Imposição industrial gerada com correções geométricas absolutas!")
-        st.download_button(
-            label="Descarregar Ficheiro Imposição SRA3 📥",
-            data=output_pdf,
-            file_name="imposicao_industrial_perfeita.pdf",
-            mime="application/pdf"
-        )
+                # Quadrantes Inferiores
