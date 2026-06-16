@@ -52,8 +52,8 @@ def gerar_marcas_reportlab(largura_folha, altura_folha, marcas_corte=True, marca
     marcas_reader = pypdf.PdfReader(packet)
     return marcas_reader.pages[0]
 
-def colar_na_folha_industrial(folha_destino, pag_orig, q_larg, alt_quad, ox, oy, rodar_90=False, inverter_cabeca=False):
-    """Executa a transformação geométrica precisa garantindo o alinhamento cabeça-com-cabeça"""
+def colar_na_folha_industrial(folha_destino, pag_orig, q_larg, alt_quad, ox, oy, rodar_180=False):
+    """Executa o encaixe vertical perfeito respeitando a orientação Cabeça-com-Cabeça industrial"""
     try:
         larg_orig = float(pag_orig.mediabox.width)
         alt_orig = float(pag_orig.mediabox.height)
@@ -63,15 +63,10 @@ def colar_na_folha_industrial(folha_destino, pag_orig, q_larg, alt_quad, ox, oy,
     if larg_orig <= 0 or alt_orig <= 0:
         larg_orig, alt_orig = 420.0, 595.0
 
-    # Determinar escala mantendo a proporção (usando margem de segurança de 94%)
-    if rodar_90:
-        escala = min(q_larg / alt_orig, alt_quad / larg_orig) * 0.94
-        w_f = alt_orig * escala
-        h_f = larg_orig * escala
-    else:
-        escala = min(q_larg / larg_orig, alt_quad / alt_orig) * 0.94
-        w_f = larg_orig * escala
-        h_f = alt_orig * escala
+    # Escala proporcional mantendo as páginas verticais na folha horizontal
+    escala = min(q_larg / larg_orig, alt_quad / alt_orig) * 0.94
+    w_f = larg_orig * escala
+    h_f = alt_orig * escala
         
     mx = (q_larg - w_f) / 2
     my = (alt_quad - h_f) / 2
@@ -79,20 +74,13 @@ def colar_na_folha_industrial(folha_destino, pag_orig, q_larg, alt_quad, ox, oy,
     # Ordem rigorosa de transformação: Escala -> Rotação -> Translação
     transf = Transformation().scale(escala)
     
-    if rodar_90:
-        if inverter_cabeca:
-            # Páginas Superiores: Roda 270° no sentido horário (cabeça para baixo, virada para o centro)
-            transf = transf.rotate(270).translate(ox + mx, oy + my + h_f)
-        else:
-            # Páginas Inferiores: Roda 90° (cabeça para cima, virada para o centro)
-            transf = transf.rotate(90).translate(ox + mx + w_f, oy + my)
+    if rodar_180:
+        # Quadrantes Superiores: Roda 180° (Cabeça virada para baixo, apontando para o centro horizontal)
+        transf = transf.rotate(180).translate(ox + mx + w_f, oy + my + h_f)
     else:
-        if inverter_cabeca:
-            transf = transf.rotate(180).translate(ox + mx + w_f, oy + my + h_f)
-        else:
-            transf = transf.translate(ox + mx, oy + my)
+        # Quadrantes Inferiores: Mantém 0° (Cabeça virada para cima, apontando para o centro horizontal)
+        transf = transf.translate(ox + mx, oy + my)
             
-    # CRIAÇÃO DA PÁGINA TEMPORÁRIA (Correção do erro de digitação LCURA_SRA3)
     pag_temp = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
     pag_temp.merge_page(pag_orig)
     pag_temp.add_transformation(transf)
@@ -146,8 +134,8 @@ if uploaded_file is not None:
                 while esquerda < direita:
                     # FRENTE
                     folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-                    colar_na_folha_industrial(folha_frente, paginas[direita], larg_quad, alt_quad, 0, 0, rodar_90=False, inverter_cabeca=False)
-                    colar_na_folha_industrial(folha_frente, paginas[esquerda], larg_quad, alt_quad, larg_quad, 0, rodar_90=False, inverter_cabeca=False)
+                    colar_na_folha_industrial(folha_frente, paginas[direita], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                    colar_na_folha_industrial(folha_frente, paginas[esquerda], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
                     folha_frente.merge_page(marcas)
                     writer.add_page(folha_frente)
                     
@@ -159,8 +147,8 @@ if uploaded_file is not None:
                     
                     # VERSO
                     folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-                    colar_na_folha_industrial(folha_verso, paginas[esquerda], larg_quad, alt_quad, 0, 0, rodar_90=False, inverter_cabeca=False)
-                    colar_na_folha_industrial(folha_verso, paginas[direita], larg_quad, alt_quad, larg_quad, 0, rodar_90=False, inverter_cabeca=False)
+                    colar_na_folha_industrial(folha_verso, paginas[esquerda], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                    colar_na_folha_industrial(folha_verso, paginas[direita], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
                     folha_verso.merge_page(marcas)
                     writer.add_page(folha_verso)
                     
@@ -168,7 +156,7 @@ if uploaded_file is not None:
                     direita -= 1
                     
             else:
-                # MODO A5: Grelha 2x2 Cabeça-com-Cabeça (Dobra no lado maior horizontal)
+                # MODO A5: Grelha 2x2 Cabeça-com-Cabeça Absoluto (Dobra no lado maior horizontal)
                 larg_quad = LARGURA_SRA3 / 2
                 alt_quad = ALTURA_SRA3 / 2
                 
@@ -179,23 +167,23 @@ if uploaded_file is not None:
                     
                     # --- FRENTE (Face A) ---
                     folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-                    # Quadrantes Superiores (P5 e P4) -> Deitadas, Cabeça para baixo (apontando para o centro)
-                    colar_na_folha_industrial(folha_frente, b_pags[4], larg_quad, alt_quad, 0, alt_quad, rodar_90=True, inverter_cabeca=True)
-                    colar_na_folha_industrial(folha_frente, b_pags[3], larg_quad, alt_quad, larg_quad, alt_quad, rodar_90=True, inverter_cabeca=True)
-                    # Quadrantes Inferiores (P8 e P1) -> Deitadas, Cabeça para cima (apontando para o centro)
-                    colar_na_folha_industrial(folha_frente, b_pags[7], larg_quad, alt_quad, 0, 0, rodar_90=True, inverter_cabeca=False)
-                    colar_na_folha_industrial(folha_frente, b_pags[0], larg_quad, alt_quad, larg_quad, 0, rodar_90=True, inverter_cabeca=False)
+                    # Quadrantes Superiores: P5 (Esq) e P4 (Dir) -> Rotação 180° (Cabeça para baixo)
+                    colar_na_folha_industrial(folha_frente, b_pags[4], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
+                    colar_na_folha_industrial(folha_frente, b_pags[3], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
+                    # Quadrantes Inferiores: P8 (Esq) e P1 (Dir) -> Rotação 0° (Cabeça para cima)
+                    colar_na_folha_industrial(folha_frente, b_pags[7], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                    colar_na_folha_industrial(folha_frente, b_pags[0], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
                     folha_frente.merge_page(marcas_f)
                     writer.add_page(folha_frente)
                     
                     # --- VERSO (Face B) ---
                     folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-                    # Quadrantes Superiores (P3 e P6) -> Deitadas, Cabeça para baixo
-                    colar_na_folha_industrial(folha_verso, b_pags[2], larg_quad, alt_quad, 0, alt_quad, rodar_90=True, inverter_cabeca=True)
-                    colar_na_folha_industrial(folha_verso, b_pags[5], larg_quad, alt_quad, larg_quad, alt_quad, rodar_90=True, inverter_cabeca=True)
-                    # Quadrantes Inferiores (P2 e P7) -> Deitadas, Cabeça para cima
-                    colar_na_folha_industrial(folha_verso, b_pags[1], larg_quad, alt_quad, 0, 0, rodar_90=True, inverter_cabeca=False)
-                    colar_na_folha_industrial(folha_verso, b_pags[6], larg_quad, alt_quad, larg_quad, 0, rodar_90=True, inverter_cabeca=False)
+                    # Quadrantes Superiores: P3 (Esq) e P6 (Dir) -> Rotação 180° (Cabeça para baixo)
+                    colar_na_folha_industrial(folha_verso, b_pags[2], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
+                    colar_na_folha_industrial(folha_verso, b_pags[5], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
+                    # Quadrantes Inferiores: P2 (Esq) e P7 (Dir) -> Rotação 0° (Cabeça para cima)
+                    colar_na_folha_industrial(folha_verso, b_pags[1], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                    colar_na_folha_industrial(folha_verso, b_pags[6], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
                     folha_verso.merge_page(marcas_f)
                     writer.add_page(folha_verso)
                     
@@ -203,7 +191,7 @@ if uploaded_file is not None:
             writer.write(output_pdf)
             output_pdf.seek(0)
             
-            st.success("🎉 Imposição industrial gerada com sucesso!")
+            st.success("🎉 Imposição corrigida de acordo com o mapa de setas real!")
             st.download_button(
                 label="Descarregar Ficheiro Imposição SRA3 📥",
                 data=output_pdf,
