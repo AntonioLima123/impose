@@ -236,4 +236,3 @@ if uploaded_file is not None:
             file_name="imposicao_industrial_perfeita.pdf",
             mime="application/pdf"
         )
-        )
