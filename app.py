@@ -142,7 +142,7 @@ if uploaded_file is not None:
             esquerda = 0
             direita = total_orig - 1
             
-            while延 esquerda < direita:
+            while esquerda < direita:
                 # --- FRENTE ---
                 folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                 colar_na_folha(folha_frente, paginas[direita], larg_quad, alt_quad, 0, 0, rodar_180=False)
