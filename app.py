@@ -153,4 +153,67 @@ if uploaded_file is not None:
                 # --- FOLHA FRENTE (Face A) ---
                 folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                 colar_na_folha(folha_frente, paginas[direita], larg_quad, alt_quad, 0, 0, rodar_180=False)
-                colar_na_folha(folha_frente, paginas[esquerda], larg_quad, alt_quad, larg_quad
+                colar_na_folha(folha_frente, paginas[esquerda], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
+                
+                marcas = desenhar_marcas_no_canvas(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=False)
+                folha_frente.merge_page(marcas)
+                writer.add_page(folha_frente)
+                
+                esquerda += 1
+                direita -= 1
+                
+                # --- FOLHA VERSO (Face B) ---
+                folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
+                colar_na_folha(folha_verso, paginas[esquerda], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                colar_na_folha(folha_verso, paginas[direita], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
+                
+                folha_verso.merge_page(marcas)
+                writer.add_page(folha_verso)
+                
+                esquerda += 1
+                direita -= 1
+                
+        else:
+            # 4 páginas lógicas por face (Grelha Industrial 2x2 com Dobra Cruzada)
+            larg_quad = LARGURA_SRA3 / 2
+            alt_quad = ALTURA_SRA3 / 2
+            
+            for bloco in range(0, total_orig, 8):
+                b_pags = paginas[bloco:bloco+8]
+                
+                # --- FRENTE DO CADERNO (Face A) ---
+                folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
+                # Linhas Superiores - Invertidas cabeça-com-cabeça (180°)
+                colar_na_folha(folha_frente, b_pags[4], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
+                colar_na_folha(folha_frente, b_pags[3], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
+                # Linhas Inferiores - Normais (0°)
+                colar_na_folha(folha_frente, b_pags[7], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                colar_na_folha(folha_frente, b_pags[0], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
+                
+                marcas_f = desenhar_marcas_no_canvas(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=True)
+                folha_frente.merge_page(marcas_f)
+                writer.add_page(folha_frente)
+                
+                # --- VERSO DO CADERNO (Face B) ---
+                folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
+                # Linhas Superiores - Invertidas cabeça-com-cabeça (180°)
+                colar_na_folha(folha_verso, b_pags[2], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
+                colar_na_folha(folha_verso, b_pags[5], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
+                # Linhas Inferiores - Normais (0°)
+                colar_na_folha(folha_verso, b_pags[1], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                colar_na_folha(folha_verso, b_pags[6], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
+                
+                folha_verso.merge_page(marcas_f)
+                writer.add_page(folha_verso)
+                
+        output_pdf = io.BytesIO()
+        writer.write(output_pdf)
+        output_pdf.seek(0)
+        
+        st.success("🎉 Imposição profissional SRA3 finalizada com absoluto sucesso!")
+        st.download_button(
+            label="Descarregar Ficheiro para Gráfica 📥",
+            data=output_pdf,
+            file_name="imposicao_final_corrigida_32x45.pdf",
+            mime="application/pdf"
+        )
