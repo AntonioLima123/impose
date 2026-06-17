@@ -8,7 +8,7 @@ from reportlab.pdfgen import canvas
 st.set_page_config(page_title="Imposição A5 Encartado 32x45", page_icon="📖", layout="wide")
 
 st.title("📖 Sistema de Imposição Gráfica - Alceamento / Encartado A5")
-st.write("Gere esquemas de imposição para revistas agrafadas ao centro (**Saddle Stitch**) em formato **Vertical A5 (Folha SRA3 320mm x 450mm)**.")
+st.write("Gere esquemas de imposição reais para revistas agrafadas ao centro (**Saddle Stitch**) em formato **Vertical A5 (Folha SRA3 320mm x 450mm)**.")
 
 # DIMENSÕES EXATAS DA FOLHA VERTICAL 32x45 EM PONTOS (1 mm = 2.83465 pontos)
 LARGURA_SRA3 = int(320 * 2.83465)  # 907 pt (Eixo X)
@@ -106,7 +106,7 @@ if uploaded_file is not None:
     
     st.info(f"Ficheiro lido com sucesso! Total de páginas original: **{total_orig}**")
     
-    # Ajuste automático global para múltiplos de 8 (Exigência do encarte em grelha 2x2)
+    # Ajuste automático global para múltiplos de 8 (Exigência para fechar a grelha de encarte 2x2)
     resto = total_orig % 8
     if resto != 0:
         pag_em_falta = 8 - resto
@@ -130,51 +130,52 @@ if uploaded_file is not None:
             
             marcas_f = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra)
             
-            # Número de folhas físicas SRA3 necessárias (cada uma leva 8 páginas)
+            # Cada folha SRA3 processa 8 páginas (4 na frente, 4 no verso)
             total_folhas = total_orig // 8
             
             for f in range(total_folhas):
-                # ALGORITMO CONCÊNTRICO GLOBAL (Saddle Stitch / Encarte A5)
-                # Mapeia as extremidades e o centro do PDF completo para casar na mesma folha
+                # --- MAPEAMENTO MATEMÁTICO REAL PARA DOBRA CRUZADA ENCARTADA ---
+                # n = total_orig (ex: 16). f = índice da folha (0 para a primeira folha externa)
+                n = total_orig
                 
-                pos_frente = [
-                    total_orig - 1 - (f * 2),  # Superior Esquerda (Invertida)
-                    (f * 2),                    # Superior Direita (Invertida)
-                    (f * 2) + 1,                # Inferior Esquerda (Normal)
-                    total_orig - 2 - (f * 2)   # Inferior Direita (Normal)
-                ]
+                # Páginas da FRENTE (Face A)
+                # Ex para f=0 e n=16: sup_esq = 16, sup_dir = 1, inf_esq = 13, inf_dir = 4
+                frente_sup_esq = n - 1 - (2 * f)
+                frente_sup_dir = 2 * f
+                frente_inf_esq = n - 4 - (2 * f)
+                frente_inf_dir = 3 + (2 * f)
                 
-                # --- FRENTE (Face A) ---
+                # Páginas do VERSO (Face B) - Espelho exato para bater correto frente/verso
+                # Ex para f=0 e n=16: sup_esq = 2, sup_dir = 15, inf_esq = 5, inf_dir = 12
+                verso_sup_esq = 1 + (2 * f)
+                verso_sup_dir = n - 2 - (2 * f)
+                verso_inf_esq = 4 + (2 * f)
+                verso_inf_dir = n - 5 - (2 * f)
+                
+                # --- PROCESSAR FRENTE ---
                 folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                 
-                # Quadrantes Superiores (Invertidos 180° - cabeça com cabeça ao centro)
-                colar_na_folha_industrial(folha_frente, paginas[pos_frente[0]], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
-                colar_na_folha_industrial(folha_frente, paginas[pos_frente[1]], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
+                # Linha Superior (Cabeça com cabeça -> Rotação 180°)
+                colar_na_folha_industrial(folha_frente, paginas[frente_sup_esq], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
+                colar_na_folha_industrial(folha_frente, paginas[frente_sup_dir], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
                 
-                # Quadrantes Inferiores (Normais 0°)
-                colar_na_folha_industrial(folha_frente, paginas[pos_frente[2]], larg_quad, alt_quad, 0, 0, rodar_180=False)
-                colar_na_folha_industrial(folha_frente, paginas[pos_frente[3]], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
+                # Linha Inferior (Páginas em pé -> Rotação 0°)
+                colar_na_folha_industrial(folha_frente, paginas[frente_inf_esq], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                colar_na_folha_industrial(folha_frente, paginas[frente_inf_dir], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
                 
                 folha_frente.merge_page(marcas_f)
                 writer.add_page(folha_frente)
                 
-                pos_verso = [
-                    (f * 2) + 2,                # Superior Esquerda (Invertida)
-                    total_orig - 3 - (f * 2),  # Superior Direita (Invertida)
-                    total_orig - 4 - (f * 2),  # Inferior Esquerda (Normal)
-                    (f * 2) + 3                 # Inferior Direita (Normal)
-                ]
-                
-                # --- VERSO (Face B) ---
+                # --- PROCESSAR VERSO ---
                 folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                 
-                # Quadrantes Superiores (Invertidos 180° - cabeça com cabeça ao centro)
-                colar_na_folha_industrial(folha_verso, paginas[pos_verso[0]], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
-                colar_na_folha_industrial(folha_verso, paginas[pos_verso[1]], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
+                # Linha Superior (Cabeça com cabeça -> Rotação 180°)
+                colar_na_folha_industrial(folha_verso, paginas[verso_sup_esq], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
+                colar_na_folha_industrial(folha_verso, paginas[verso_sup_dir], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
                 
-                # Quadrantes Inferiores (Normais 0°)
-                colar_na_folha_industrial(folha_verso, paginas[pos_verso[2]], larg_quad, alt_quad, 0, 0, rodar_180=False)
-                colar_na_folha_industrial(folha_verso, paginas[pos_verso[3]], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
+                # Linha Inferior (Páginas em pé -> Rotação 0°)
+                colar_na_folha_industrial(folha_verso, paginas[verso_inf_esq], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                colar_na_folha_industrial(folha_verso, paginas[verso_inf_dir], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
                 
                 folha_verso.merge_page(marcas_f)
                 writer.add_page(folha_verso)
@@ -183,7 +184,7 @@ if uploaded_file is not None:
             writer.write(output_pdf)
             output_pdf.seek(0)
             
-            st.success("🎉 Imposição de Revista Encartada (Saddle Stitch) A5 gerada com sucesso!")
+            st.success("🎉 Imposição de Revista Encartada (Saddle Stitch) A5 corrigida com sucesso!")
             st.download_button(
                 label="Descarregar Ficheiro Imposição Encartado A5 📥",
                 data=output_pdf,
