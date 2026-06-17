@@ -134,4 +134,58 @@ if uploaded_file is not None:
                 esquerda = 0
                 direita = total_orig - 1
                 
-                marcas = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada
+                marcas = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=False)
+                
+                while基本 esquerda < direita:
+                    # FRENTE
+                    folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
+                    colar_na_folha_industrial(folha_frente, paginas[direita], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                    colar_na_folha_industrial(folha_frente, paginas[esquerda], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
+                    folha_frente.merge_page(marcas)
+                    writer.add_page(folha_frente)
+                    
+                    esquerda += 1
+                    direita -= 1
+                    
+                    if esquerda >= direita:
+                        break
+                    
+                    # VERSO
+                    folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
+                    colar_na_folha_industrial(folha_verso, paginas[esquerda], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                    colar_na_folha_industrial(folha_verso, paginas[direita], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
+                    folha_verso.merge_page(marcas)
+                    writer.add_page(folha_verso)
+                    
+                    esquerda += 1
+                    direita -= 1
+                    
+            else:
+                # MODO A5: GRELHA EXATA 2 COLUNAS X 2 LINHAS (4 páginas por face)
+                larg_quad = LARGURA_SRA3 / 2
+                alt_quad = ALTURA_SRA3 / 2
+                
+                marcas_f = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=True)
+                
+                for bloco in range(0, total_orig, 8):
+                    b_pags = paginas[bloco:bloco+8]
+                    
+                    # --- FRENTE (Face A) ---
+                    folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
+                    
+                    # Quadrantes Superiores -> P5 e P4 (Invertidas 180° - cabeça para baixo)
+                    colar_na_folha_industrial(folha_frente, b_pags[4], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
+                    colar_na_folha_industrial(folha_frente, b_pags[3], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
+                    
+                    # Quadrantes Inferiores -> P8 e P1 (Normais 0° - cabeça para cima virada para o centro)
+                    colar_na_folha_industrial(folha_frente, b_pags[7], larg_quad, alt_quad, 0, 0, rodar_180=False)
+                    colar_na_folha_industrial(folha_frente, b_pags[0], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
+                    
+                    folha_frente.merge_page(marcas_f)
+                    writer.add_page(folha_frente)
+                    
+                    # --- VERSO (Face B) ---
+                    folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
+                    
+                    # Quadrantes Superiores -> P3 e P6 (Invertidas 180° - cabeça para baixo)
+                    colar_na_folha_industrial(folha_verso, b_pags[2], larg_quad, alt
