@@ -136,7 +136,7 @@ if uploaded_file is not None:
                 
                 marcas = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=False)
                 
-                while基本 esquerda < direita:
+                while esquerda < direita:
                     # FRENTE
                     folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                     colar_na_folha_industrial(folha_frente, paginas[direita], larg_quad, alt_quad, 0, 0, rodar_180=False)
