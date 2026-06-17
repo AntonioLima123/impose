@@ -51,7 +51,7 @@ def gerar_marcas_reportlab(largura_folha, altura_folha, marcas_corte=True, marca
         can.line(0, afastamento, comprimento_marca, afastamento)
         
         # Canto Inferior Direito
-        can.line(largura_folha - slab := largura_folha - afastamento, 0, largura_folha - afastamento, comprimento_marca)
+        can.line(largura_folha - afastamento, 0, largura_folha - afastamento, comprimento_marca)
         can.line(largura_folha, afastamento, largura_folha - comprimento_marca, afastamento)
         
     can.save()
@@ -164,14 +164,3 @@ if uploaded_file is not None:
                 
             output_pdf = io.BytesIO()
             writer.write(output_pdf)
-            output_pdf.seek(0)
-            
-            st.success("🎉 Imposição de Cadernos Empilhados A5 em SRA3 gerada com sucesso!")
-            st.download_button(
-                label="Descarregar Ficheiro Imposição A5 📥",
-                data=output_pdf,
-                file_name="imposicao_A5_empilhado_32x45.pdf",
-                mime="application/pdf"
-            )
-        except Exception as e:
-            st.error(f"❌ Erro no processamento: {str(e)}")
