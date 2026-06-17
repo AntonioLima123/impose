@@ -111,4 +111,27 @@ if uploaded_file is not None:
     
     multiplo = 4 if "A4" in modo else 8
     resto = total_orig % multiplo
-    if resto
+    if resto != 0:
+        pag_em_falta = multiplo - resto
+        st.warning(f"⚠️ Ajuste de Caderno: Adicionadas {pag_em_falta} páginas em branco.")
+        try:
+            larg_p = float(paginas[0].mediabox.width)
+            alt_p = float(paginas[0].mediabox.height)
+        except Exception:
+            larg_p, alt_p = 420.0, 595.0
+        for _ in range(pag_em_falta):
+            paginas.append(PageObject.create_blank_page(width=larg_p, height=alt_p))
+        total_orig = len(paginas)
+
+    if st.button("Gerar Imposição Final SRA3 🚀"):
+        try:
+            writer = pypdf.PdfWriter()
+            
+            if multiplo == 4:
+                # MODO A4: Duas colunas verticais numa folha vertical (Dobra ao meio)
+                larg_quad = LARGURA_SRA3 / 2
+                alt_quad = ALTURA_SRA3
+                esquerda = 0
+                direita = total_orig - 1
+                
+                marcas = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_
