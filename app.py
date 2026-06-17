@@ -8,7 +8,7 @@ from reportlab.pdfgen import canvas
 st.set_page_config(page_title="Imposição Profissional 32x45", page_icon="📖", layout="wide")
 
 st.title("📖 Sistema de Imposição Gráfica Profissional - empilhada (Formato Vertical 32x45)")
-st.write("Gere esquemas de imposição reais para gráfica em formato **Vertical (320mm x 450mm)** com marcas periféricas externas.")
+st.write("Gere esquemas de imposição para gráfica para formato A4 e A5 **Vertical (320mm x 450mm)** cadernos empilhados | cozidos na lombada.")
 
 # DIMENSÕES EXATAS DA FOLHA VERTICAL 32x45 EM PONTOS (1 mm = 2.83465 pontos)
 LARGURA_SRA3 = int(320 * 2.83465)  # 907 pt (Eixo X)
