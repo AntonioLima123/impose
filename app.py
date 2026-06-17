@@ -7,7 +7,7 @@ from reportlab.pdfgen import canvas
 # Configuração da página da plataforma
 st.set_page_config(page_title="Imposição Profissional 32x45", page_icon="📖", layout="wide")
 
-st.title("📖 Sistema de Imposição Gráfica Profissional (Formato Vertical 32x45)")
+st.title("📖 Sistema de Imposição Gráfica Profissional - empilhada (Formato Vertical 32x45)")
 st.write("Gere esquemas de imposição reais para gráfica em formato **Vertical (320mm x 450mm)** com marcas periféricas externas.")
 
 # DIMENSÕES EXATAS DA FOLHA VERTICAL 32x45 EM PONTOS (1 mm = 2.83465 pontos)
