@@ -136,7 +136,7 @@ if uploaded_file is not None:
                 
                 marcas = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=False)
                 
-                while基本 esquerda < direita:
+                while esquerda < direita:
                     # FRENTE
                     folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                     colar_na_folha_industrial(folha_frente, paginas[direita], larg_quad, alt_quad, 0, 0, rodar_180=False)
@@ -188,26 +188,4 @@ if uploaded_file is not None:
                     folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                     
                     # Quadrantes Superiores -> P3 e P6 (Invertidas 180° - cabeça para baixo)
-                    colar_na_folha_industrial(folha_verso, b_pags[2], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
-                    colar_na_folha_industrial(folha_verso, b_pags[5], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
-                    
-                    # Quadrantes Inferiores -> P2 e P7 (Normais 0° - cabeça para cima virada para o centro)
-                    colar_na_folha_industrial(folha_verso, b_pags[1], larg_quad, alt_quad, 0, 0, rodar_180=False)
-                    colar_na_folha_industrial(folha_verso, b_pags[6], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
-                    
-                    folha_verso.merge_page(marcas_f)
-                    writer.add_page(folha_verso)
-                    
-            output_pdf = io.BytesIO()
-            writer.write(output_pdf)
-            output_pdf.seek(0)
-            
-            st.success("🎉 Imposição 32x45 Vertical em Grelha 2x2 com páginas em pé gerada com sucesso!")
-            st.download_button(
-                label="Descarregar Ficheiro Imposição SRA3 📥",
-                data=output_pdf,
-                file_name="imposicao_32x45_perfeita.pdf",
-                mime="application/pdf"
-            )
-        except Exception as e:
-            st.error(f"❌ Erro na imposição: {str(e)}")
+                    col
