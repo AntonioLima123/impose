@@ -23,6 +23,7 @@ def gerar_marcas_reportlab(largura_folha, altura_folha, marcas_corte=True, marca
     can.setLineWidth(0.5)
     
     cx = largura_folha / 2
+    cy = altura_folha / 2
     comprimento_marca = 20
     afastamento = 15 # Margem para as guias não invadirem o impresso útil
     
@@ -32,11 +33,9 @@ def gerar_marcas_reportlab(largura_folha, altura_folha, marcas_corte=True, marca
         can.line(cx, altura_folha, cx, altura_folha - comprimento_marca)
         can.line(cx, 0, cx, comprimento_marca)
         if dobra_cruzada:
-            # Dobras horizontais equidistantes para os cadernos verticais
-            for i in range(1, 4):
-                cy_dobra = (altura_folha / 4) * i
-                can.line(0, cy_dobra, comprimento_marca, cy_dobra)
-                can.line(largura_folha, cy_dobra, largura_folha - comprimento_marca, cy_dobra)
+            # Linha de Dobra Horizontal Central
+            can.line(0, cy, comprimento_marca, cy)
+            can.line(largura_folha, cy, largura_folha - comprimento_marca, cy)
             
     if marcas_corte:
         can.setDash()
@@ -137,7 +136,7 @@ if uploaded_file is not None:
                 
                 marcas = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=False)
                 
-                while esquerda < direita:
+                while基本 esquerda < direita:
                     # FRENTE
                     folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                     colar_na_folha_industrial(folha_frente, paginas[direita], larg_quad, alt_quad, 0, 0, rodar_180=False)
@@ -162,9 +161,9 @@ if uploaded_file is not None:
                     direita -= 1
                     
             else:
-                # MODO A5: Grelha vertical (2 colunas x 4 linhas de páginas verticais) numa folha 32x45 VERTICAL.
+                # MODO A5: GRELHA CORRIGIDA 2 COLUNAS X 2 LINHAS (4 páginas por face)
                 larg_quad = LARGURA_SRA3 / 2
-                alt_quad = ALTURA_SRA3 / 4  # Distribuição vertical perfeita para as páginas ficarem em pé
+                alt_quad = ALTURA_SRA3 / 2
                 
                 marcas_f = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=True)
                 
@@ -174,20 +173,11 @@ if uploaded_file is not None:
                     # --- FRENTE (Face A) ---
                     folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                     
-                    # Linha 4 (Topo Superior) -> P5 e P4 (Invertidas 180° - cabeça para baixo)
-                    colar_na_folha_industrial(folha_frente, b_pags[4], larg_quad, alt_quad, 0, alt_quad * 3, rodar_180=True)
-                    colar_na_folha_industrial(folha_frente, b_pags[3], larg_quad, alt_quad, larg_quad, alt_quad * 3, rodar_180=True)
+                    # Quadrantes Superiores -> P5 e P4 (Invertidas 180° - cabeça para baixo)
+                    colar_na_folha_industrial(folha_frente, b_pags[4], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
+                    colar_na_folha_industrial(folha_frente, b_pags[3], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
                     
-                    # Linha 3 -> P1 e P8 (Normais 0° - cabeça para cima de encontro à linha 4)
-                    colar_na_folha_industrial(folha_frente, b_pags[0], larg_quad, alt_quad, 0, alt_quad * 2, rodar_180=False)
-                    colar_na_folha_industrial(folha_frente, b_pags[7], larg_quad, alt_quad, larg_quad, alt_quad * 2, rodar_180=False)
-                    
-                    # Linha 2 -> P5 e P4 de um segundo grupo (ou lógica contínua de dobra cruzada)
-                    # Mantendo o padrão cabeça-com-cabeça nos patamares inferiores
-                    colar_na_folha_industrial(folha_frente, b_pags[4], larg_quad, alt_quad, 0, alt_quad * 1, rodar_180=True)
-                    colar_na_folha_industrial(folha_frente, b_pags[3], larg_quad, alt_quad, larg_quad, alt_quad * 1, rodar_180=True)
-                    
-                    # Linha 1 (Base Inferior) -> P8 e P1 normais
+                    # Quadrantes Inferiores -> P8 e P1 (Normais 0° - cabeça para cima virada para o centro)
                     colar_na_folha_industrial(folha_frente, b_pags[7], larg_quad, alt_quad, 0, 0, rodar_180=False)
                     colar_na_folha_industrial(folha_frente, b_pags[0], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
                     
@@ -197,19 +187,11 @@ if uploaded_file is not None:
                     # --- VERSO (Face B) ---
                     folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
                     
-                    # Linha 4 (Topo Superior) -> P3 e P6 (Invertidas 180°)
-                    colar_na_folha_industrial(folha_verso, b_pags[2], larg_quad, alt_quad, 0, alt_quad * 3, rodar_180=True)
-                    colar_na_folha_industrial(folha_verso, b_pags[5], larg_quad, alt_quad, larg_quad, alt_quad * 3, rodar_180=True)
+                    # Quadrantes Superiores -> P3 e P6 (Invertidas 180° - cabeça para baixo)
+                    colar_na_folha_industrial(folha_verso, b_pags[2], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
+                    colar_na_folha_industrial(folha_verso, b_pags[5], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
                     
-                    # Linha 3 -> P7 e P2 normais
-                    colar_na_folha_industrial(folha_verso, b_pags[6], larg_quad, alt_quad, 0, alt_quad * 2, rodar_180=False)
-                    colar_na_folha_industrial(folha_verso, b_pags[1], larg_quad, alt_quad, larg_quad, alt_quad * 2, rodar_180=False)
-                    
-                    # Linha 2 -> P3 e P6 invertidas
-                    colar_na_folha_industrial(folha_verso, b_pags[2], larg_quad, alt_quad, 0, alt_quad * 1, rodar_180=True)
-                    colar_na_folha_industrial(folha_verso, b_pags[5], larg_quad, alt_quad, larg_quad, alt_quad * 1, rodar_180=True)
-                    
-                    # Linha 1 (Base Inferior) -> P2 e P7 normais
+                    # Quadrantes Inferiores -> P2 e P7 (Normais 0° - cabeça para cima virada para o centro)
                     colar_na_folha_industrial(folha_verso, b_pags[1], larg_quad, alt_quad, 0, 0, rodar_180=False)
                     colar_na_folha_industrial(folha_verso, b_pags[6], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
                     
@@ -220,7 +202,7 @@ if uploaded_file is not None:
             writer.write(output_pdf)
             output_pdf.seek(0)
             
-            st.success("🎉 Imposição 32x45 Vertical com blocos em pé gerada com sucesso!")
+            st.success("🎉 Imposição 32x45 Vertical em Grelha 2x2 com páginas em pé gerada com sucesso!")
             st.download_button(
                 label="Descarregar Ficheiro Imposição SRA3 📥",
                 data=output_pdf,
