@@ -134,35 +134,4 @@ if uploaded_file is not None:
                 esquerda = 0
                 direita = total_orig - 1
                 
-                marcas = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=False)
-                
-                while esquerda < direita:
-                    # FRENTE
-                    folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-                    colar_na_folha_industrial(folha_frente, paginas[alignment_side := direita], larg_quad, alt_quad, 0, 0, rodar_180=False)
-                    colar_na_folha_industrial(folha_frente, paginas[esquerda], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
-                    folha_frente.merge_page(marcas)
-                    writer.add_page(folha_frente)
-                    
-                    esquerda += 1
-                    direita -= 1
-                    
-                    if esquerda >= direita:
-                        break
-                    
-                    # VERSO
-                    folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-                    colar_na_folha_industrial(folha_verso, paginas[esquerda], larg_quad, alt_quad, 0, 0, rodar_180=False)
-                    colar_na_folha_industrial(folha_verso, paginas[direita], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
-                    folha_verso.merge_page(marcas)
-                    writer.add_page(folha_verso)
-                    
-                    esquerda += 1
-                    direita -= 1
-                    
-            else:
-                # MODO A5: GRELHA EXATA 2 COLUNAS X 2 LINHAS (4 páginas por face)
-                larg_quad = LARGURA_SRA3 / 2
-                alt_quad = ALTURA_SRA3 / 2
-                
-                marcas_f = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada=True)
+                marcas = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra, dobra_cruzada
