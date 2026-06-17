@@ -45,79 +45,10 @@ def gerar_marcas_reportlab(largura_folha, altura_folha, marcas_corte=True, marca
         can.line(0, altura_folha - afastamento, comprimento_marca, altura_folha - afastamento)
         # Canto Superior Direito
         can.line(largura_folha - afastamento, altura_folha, largura_folha - afastamento, altura_folha - comprimento_marca)
-        can.line(largura_folha, altura_folha - afastamento, largura_fox = largura_folha - comprimento_marca, y = altura_folha - afastamento)
-        # Ajuste de linha contínua do canto superior direito
         can.line(largura_folha, altura_folha - afastamento, largura_folha - comprimento_marca, altura_folha - afastamento)
         # Canto Inferior Esquerdo
         can.line(afastamento, 0, afastamento, comprimento_marca)
         can.line(0, afastamento, comprimento_marca, afastamento)
         # Canto Inferior Direito
-        can.line(largura_folha - afastamento, 0, largura_folha - afastamento, comprimento_marca)
-        can.line(largura_folha, afastamento, largura_folha - comprimento_marca, afastamento)
-        
-    can.save()
-    packet.seek(0)
-    marcas_reader = pypdf.PdfReader(packet)
-    return marcas_reader.pages[0]
-
-def colar_na_folha_industrial(folha_destino, pag_orig, q_larg, alt_quad, ox, oy, rodar_180=False):
-    """Insere a página mantendo a orientação vertical (em pé) nativa e aplicando 180° onde necessário"""
-    try:
-        larg_orig = float(pag_orig.mediabox.width)
-        alt_orig = float(pag_orig.mediabox.height)
-    except Exception:
-        larg_orig, alt_orig = 420.0, 595.0
-        
-    if larg_orig <= 0 or alt_orig <= 0:
-        larg_orig, alt_orig = 420.0, 595.0
-
-    # Escala mantendo as proporções verticais dentro do quadrante vertical dedicado
-    escala = min(q_larg / larg_orig, alt_quad / alt_orig) * 0.92
-    w_f = larg_orig * escala
-    h_f = alt_orig * escala
-        
-    mx = (q_larg - w_f) / 2
-    my = (alt_quad - h_f) / 2
-    
-    transf = Transformation().scale(escala)
-    
-    if rodar_180:
-        # Cabeça com cabeça: roda 180 graus para inverter a orientação vertical
-        transf = transf.rotate(180).translate(ox + mx + w_f, oy + my + h_f)
-    else:
-        # Posição em pé normal (0 graus)
-        transf = transf.translate(ox + mx, oy + my)
-            
-    pag_temp = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-    pag_temp.merge_page(pag_orig)
-    pag_temp.add_transformation(transf)
-    folha_destino.merge_page(pag_temp)
-
-# --- INTERFACE ---
-st.sidebar.header("⚙️ Definições de Imposição")
-modo = st.sidebar.selectbox("Formato Final da Revista", [
-    "Revista A4 (Caderno de 4 Páginas - Dobra Única)", 
-    "Revista A5 (Caderno de 8 Páginas - Dobra Cruzada Mecânica)"
-])
-incluir_corte = st.sidebar.checkbox("Incluir Marcas de Corte (Exteriores)", value=True)
-incluir_dobra = st.sidebar.checkbox("Incluir Marcas de Dobra (Sangria)", value=True)
-
-uploaded_file = st.file_uploader("Selecione o ficheiro PDF da Revista", type=["pdf"])
-
-if uploaded_file is not None:
-    reader = pypdf.PdfReader(uploaded_file)
-    paginas = list(reader.pages)
-    total_orig = len(paginas)
-    
-    st.info(f"Ficheiro lido com sucesso! Total de páginas: **{total_orig}**")
-    
-    multiplo = 4 if "A4" in modo else 8
-    resto = total_orig % multiplo
-    if resto != 0:
-        pag_em_falta = multiplo - resto
-        st.warning(f"⚠️ Ajuste de Caderno: Adicionadas {pag_em_falta} páginas em branco.")
-        try:
-            larg_p = float(paginas[0].mediabox.width)
-            alt_p = float(paginas[0].mediabox.height)
-        except Exception:
-            larg_p, alt_p = 420.0, 595.0
+        can.line(largura_folha - afastamento, 0, largura_folha - slams if 'slams' in locals() else afastamento, comprimento_marca)
+        can.line(
