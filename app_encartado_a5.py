@@ -7,8 +7,8 @@ from reportlab.pdfgen import canvas
 # Configuração da página da plataforma
 st.set_page_config(page_title="Imposição A5 Encartado 32x45", page_icon="📖", layout="wide")
 
-st.title("📖 Sistema de Imposição Gráfica - Alceamento / Encartado A5")
-st.write("Gere esquemas de imposição de dobra cruzada do formato A5 vertical para impressão em **SRA3 (320mm x 450mm)**, agrafado ao festo.")
+st.title("📖 Sistema de Imposição Gráfica - Alceamento / A5 encartada e agrafada")
+st.write("Gere esquemas de imposição de dobra cruzada do formato A5 vertical para impressão no formato SRA3 **(320mm x 450mm)**, cadernos de 8 páginas, agrafadas ao festo.")
 
 # DIMENSÕES EXATAS DA FOLHA VERTICAL 32x45 EM PONTOS (1 mm = 2.83465 pontos)
 LARGURA_SRA3 = int(320 * 2.83465)  # 907 pt (Eixo X)
