@@ -8,7 +8,7 @@ from reportlab.pdfgen import canvas
 st.set_page_config(page_title="Imposição A5 Encartado 32x45", page_icon="📖", layout="wide")
 
 st.title("📖 Sistema de Imposição Gráfica - Alceamento / Encartado A5")
-st.write("Gere esquemas de imposição reais para revistas agrafadas ao centro (**Saddle Stitch**) em formato **Vertical A5 (Folha SRA3 320mm x 450mm)**.")
+st.write("Gere esquemas de imposição reais baseados no boneco físico de dobra cruzada para formato **Vertical A5 (Folha SRA3 320mm x 450mm)**.")
 
 # DIMENSÕES EXATAS DA FOLHA VERTICAL 32x45 EM PONTOS (1 mm = 2.83465 pontos)
 LARGURA_SRA3 = int(320 * 2.83465)  # 907 pt (Eixo X)
@@ -32,7 +32,7 @@ def gerar_marcas_reportlab(largura_folha, altura_folha, marcas_corte=True, marca
         # Linha de Dobra Vertical Central
         can.line(cx, altura_folha, cx, altura_folha - comprimento_marca)
         can.line(cx, 0, cx, comprimento_marca)
-        # Linha de Dobra Horizontal Central (Obrigatória para Grelha 2x2 do A5)
+        # Linha de Dobra Horizontal Central
         can.line(0, cy, comprimento_marca, cy)
         can.line(largura_folha, cy, largura_folha - comprimento_marca, cy)
             
@@ -130,50 +130,52 @@ if uploaded_file is not None:
             
             marcas_f = gerar_marcas_reportlab(LARGURA_SRA3, ALTURA_SRA3, incluir_corte, incluir_dobra)
             
-            # Cada folha SRA3 processa 8 páginas (4 na frente, 4 no verso)
+            # Cada folha física SRA3 processa 8 páginas (4 frente, 4 verso)
             total_folhas = total_orig // 8
             
             for f in range(total_folhas):
-                # --- MAPEAMENTO MATEMÁTICO REAL PARA DOBRA CRUZADA ENCARTADA ---
-                # n = total_orig (ex: 16). f = índice da folha (0 para a primeira folha externa)
+                # ALGORITMO INTEGRADO DO BONECO REAL DO UTILIZADOR
+                # Nota: Em Python os índices começam em 0, por isso subtraímos 1 a cada posição
                 n = total_orig
                 
-                # Páginas da FRENTE (Face A)
-                # Ex para f=0 e n=16: sup_esq = 16, sup_dir = 1, inf_esq = 13, inf_dir = 4
-                frente_sup_esq = n - 1 - (2 * f)
-                frente_sup_dir = 2 * f
-                frente_inf_esq = n - 4 - (2 * f)
-                frente_inf_dir = 3 + (2 * f)
+                # --- MAPA DA FRENTE (FACE A) ---
+                # Topo Esq: 1, 5, 9... -> fórmula: (4 * f)
+                frente_sup_esq = 4 * f
+                # Topo Dir: 16, 12, 8... -> fórmula: n - 1 - (4 * f)
+                frente_sup_dir = n - 1 - (4 * f)
+                # Base Esq: 4, 8, 12... -> fórmula: 3 + (4 * f)
+                frente_inf_esq = 3 + (4 * f)
+                # Base Dir: 13, 9, 5... -> fórmula: n - 4 - (4 * f)
+                frente_inf_dir = n - 4 - (4 * f)
                 
-                # Páginas do VERSO (Face B) - Espelho exato para bater correto frente/verso
-                # Ex para f=0 e n=16: sup_esq = 2, sup_dir = 15, inf_esq = 5, inf_dir = 12
-                verso_sup_esq = 1 + (2 * f)
-                verso_sup_dir = n - 2 - (2 * f)
-                verso_inf_esq = 4 + (2 * f)
-                verso_inf_dir = n - 5 - (2 * f)
+                # --- MAPA DO VERSO (FACE B) ---
+                # Topo Esq: 15, 11, 7... -> fórmula: n - 2 - (4 * f)
+                verso_sup_esq = n - 2 - (4 * f)
+                # Topo Dir: 2, 6, 10... -> fórmula: 1 + (4 * f)
+                verso_sup_dir = 1 + (4 * f)
+                # Base Esq: 14, 10, 6... -> fórmula: n - 3 - (4 * f)
+                verso_inf_esq = n - 3 - (4 * f)
+                # Base Dir: 3, 7, 11... -> fórmula: 2 + (4 * f)
+                verso_inf_dir = 2 + (4 * f)
                 
-                # --- PROCESSAR FRENTE ---
+                # --- EXECUTAR MONTAGEM DA FRENTE ---
                 folha_frente = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-                
-                # Linha Superior (Cabeça com cabeça -> Rotação 180°)
+                # Linha Superior (Invertidas 180°)
                 colar_na_folha_industrial(folha_frente, paginas[frente_sup_esq], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
                 colar_na_folha_industrial(folha_frente, paginas[frente_sup_dir], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
-                
-                # Linha Inferior (Páginas em pé -> Rotação 0°)
+                # Linha Inferior (Direitas 0°)
                 colar_na_folha_industrial(folha_frente, paginas[frente_inf_esq], larg_quad, alt_quad, 0, 0, rodar_180=False)
                 colar_na_folha_industrial(folha_frente, paginas[frente_inf_dir], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
                 
                 folha_frente.merge_page(marcas_f)
                 writer.add_page(folha_frente)
                 
-                # --- PROCESSAR VERSO ---
+                # --- EXECUTAR MONTAGEM DO VERSO ---
                 folha_verso = PageObject.create_blank_page(width=LARGURA_SRA3, height=ALTURA_SRA3)
-                
-                # Linha Superior (Cabeça com cabeça -> Rotação 180°)
+                # Linha Superior (Invertidas 180°)
                 colar_na_folha_industrial(folha_verso, paginas[verso_sup_esq], larg_quad, alt_quad, 0, alt_quad, rodar_180=True)
                 colar_na_folha_industrial(folha_verso, paginas[verso_sup_dir], larg_quad, alt_quad, larg_quad, alt_quad, rodar_180=True)
-                
-                # Linha Inferior (Páginas em pé -> Rotação 0°)
+                # Linha Inferior (Direitas 0°)
                 colar_na_folha_industrial(folha_verso, paginas[verso_inf_esq], larg_quad, alt_quad, 0, 0, rodar_180=False)
                 colar_na_folha_industrial(folha_verso, paginas[verso_inf_dir], larg_quad, alt_quad, larg_quad, 0, rodar_180=False)
                 
@@ -184,7 +186,7 @@ if uploaded_file is not None:
             writer.write(output_pdf)
             output_pdf.seek(0)
             
-            st.success("🎉 Imposição de Revista Encartada (Saddle Stitch) A5 corrigida com sucesso!")
+            st.success("🎉 Imposição Alceada A5 gerada e calibrada com o seu boneco físico!")
             st.download_button(
                 label="Descarregar Ficheiro Imposição Encartado A5 📥",
                 data=output_pdf,
