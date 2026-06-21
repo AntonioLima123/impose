@@ -8,7 +8,7 @@ from reportlab.pdfgen import canvas
 st.set_page_config(page_title="Imposição A5 Empilhado 32x45", page_icon="📚", layout="wide")
 
 st.title("📚 Sistema de Imposição Gráfica - Cadernos Empilhados A5")
-st.write("Gere esquemas de imposição para revistas com cadernos independentes de 8 páginas no formato **Vertical A5 (Folha SRA3 320mm x 450mm)**.")
+st.write("Gere esquema de imposição para revistas com cadernos independentes de 8 páginas no formato **Vertical A5 (Folha SRA3 320mm x 450mm)**.")
 
 # DIMENSÕES EXATAS DA FOLHA VERTICAL 32x45 EM PONTOS (1 mm = 2.83465 pontos)
 MM_TO_PTS = 2.83465
